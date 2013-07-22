@@ -1,0 +1,45 @@
+[ ] @Consumers --> @Receives
+  --> note that it shouldn't be useful in most cases as content types transit with messages
+[ ] @Produces --> @Sends (allow array of values like Jersey?)
+[x] gather message data into an Event object?
+[ ] body converters (reader/writer in Jersey)
+  --> driven by content type
+  [x] interface ==> using MessageBodyReader/Writer
+  [ ] injection
+  [ ] String using encoding
+  [ ] bytes
+  [ ] JSON
+    [ ] Jackson by default
+      [ ] use injected ObjectMapper
+[ ] parameter providers
+  [ ] they should be available to normal injection (i.e. Guice) too somehow
+    --> requires an InjectableProvider that is a factory of Injectables that are providers for specific events
+  [ ] body (with the help of body converters)
+  [ ] AMQP.BasicProperties
+  [ ] Channel
+  [ ] @BindingKeyParam
+  [ ] properties params
+    [ ] @ContentType
+    [ ] delivery tag (necessary for ack)
+  [ ] Event
+  [x] Qarrot
+[ ] RPCs
+  [ ] can we return null values?
+  [ ] if method returns "void", return null
+  [ ] if method throws Exception, try to create an instance of the return type (if some payload object class)
+    with a the (String, Throwable) constructor
+  [ ] if no such constructor exists, return a RpcError as JSon with a "application/error" MIME type
+  [ ] provide media type with response
+[ ] route spec parser
+[ ] auto-reconnect
+  [ ] publish
+  [ ] consume
+[ ] allow persistence of published messages (for when RabbitMQ is not around) --> MessageStorage?
+[ ] thread-safety of Qarrot and friends
+[ ] look into an event custom-scope for Guice
+[ ] AMQP shutdown
+[ ] disconnections
+  [ ] client
+  [ ] server (see also persistence of messages)
+[ ] use stuff from JAX-RS and simplify
+[ ] scan parent injectors

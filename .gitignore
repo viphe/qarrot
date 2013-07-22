@@ -1,0 +1,13 @@
+# Temporary files
+*.tmp
+*.swp
+*~
+
+# Build artefacts
+build/
+out/
+
+# IDE & dev tools
+*.iml
+.idea/
+.gradle/
