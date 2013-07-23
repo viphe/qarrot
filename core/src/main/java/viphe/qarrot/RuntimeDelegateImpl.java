@@ -1,9 +1,6 @@
 package viphe.qarrot;
 
-import javax.ws.rs.core.Application;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriBuilder;
-import javax.ws.rs.core.Variant;
+import javax.ws.rs.core.*;
 import javax.ws.rs.ext.RuntimeDelegate;
 
 public class RuntimeDelegateImpl extends RuntimeDelegate {
@@ -30,16 +27,11 @@ public class RuntimeDelegateImpl extends RuntimeDelegate {
 
     @Override
     public <T> HeaderDelegate<T> createHeaderDelegate(Class<T> type) {
-        return new HeaderDelegate<T>() {
-            @Override
-            public T fromString(String value) throws IllegalArgumentException {
-                throw new RuntimeException("not implemented");
-            }
+        if (MediaType.class.isAssignableFrom(type)) {
+            return (HeaderDelegate<T>) MediaTypeHeaderDelegate.INSTANCE;
 
-            @Override
-            public String toString(T value) {
-                throw new RuntimeException("not implemented");
-            }
-        };
+        } else {
+            return null;
+        }
     }
 }

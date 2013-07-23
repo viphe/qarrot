@@ -34,7 +34,7 @@ public class Rpc {
             .replyTo(replyQueueName)
             .build();
 
-        channel.basicPublish("", requestQueueName, properties,request);
+        channel.basicPublish("", requestQueueName, properties, request);
 
         long limit = System.currentTimeMillis() + timeout;
         while (true) {

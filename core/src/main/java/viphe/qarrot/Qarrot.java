@@ -172,7 +172,11 @@ public class Qarrot implements Closeable, RouteSpecMap {
     }
 
     public void send(RouteSpec routeSpec, AMQP.BasicProperties properties, Object payload) throws IOException {
-        send(routeSpec, "", properties, payload);
+        send(
+            routeSpec,
+            "",
+            properties,
+            getBytes(MediaTypes.withCharset(properties.getContentType(), properties.getContentEncoding()), payload));
     }
 
     public void send(RouteSpec routeSpec, String routingKey, MediaType mediaType, Object payload) throws IOException {
@@ -182,7 +186,6 @@ public class Qarrot implements Closeable, RouteSpecMap {
     public void send(RouteSpec routeSpec, String routingKey, AMQP.BasicProperties properties, Object payload) throws IOException {
         Route route = routeSpec.declareOn(channel, this);
         route.publishOn(channel, routingKey, properties, ((String) payload).getBytes());
-
     }
 
     public RpcResponse call(String queue, long timeout, BasicProperties properties, byte[] body)
@@ -191,27 +194,11 @@ public class Qarrot implements Closeable, RouteSpecMap {
         return rpc.call(properties, body);
     }
 
-    public <T> Object call(String queue, long timeout, MediaType mediaType, Object payload, Class<T> responseClass)
+    public <T> T call(String queue, long timeout, MediaType mediaType, Object payload, Class<T> responseClass)
     throws IOException, TimeoutException, InterruptedException {
         String encoding = MediaTypes.getCharset(mediaType);
 
-        byte[] body;
-        if (payload == null) {
-            body = null;
-        } else if (payload instanceof byte[]) {
-            body = (byte[]) payload;
-        } else if (payload instanceof String) {
-            body = encoding == null ? ((String) payload).getBytes() : ((String) payload).getBytes(encoding);
-        } else {
-            MessageBodyWriter bodyWriter = findWriter(payload.getClass(), null, new Annotation[0], mediaType);
-            if (bodyWriter == null) {
-                throw new IllegalArgumentException("cannot convert " + payload.getClass() + " to message body");
-            } else {
-                ByteArrayOutputStream baos = new ByteArrayOutputStream(1024);
-                bodyWriter.writeTo(payload, payload.getClass(), null, new Annotation[0], mediaType, EMPTY_HEADERS, baos);
-                body = baos.toByteArray();
-            }
-        }
+        byte[] body = getBytes(mediaType, payload);
 
         AMQP.BasicProperties.Builder bpb = new AMQP.BasicProperties.Builder();
         if (encoding != null) {
@@ -248,5 +235,27 @@ public class Qarrot implements Closeable, RouteSpecMap {
                 return responseClass.cast(result);
             }
         }
+    }
+
+    private byte[] getBytes(MediaType mediaType, Object payload) throws IOException {
+        byte[] body;
+        if (payload == null) {
+            body = null;
+        } else if (payload instanceof byte[]) {
+            body = (byte[]) payload;
+        } else if (payload instanceof String) {
+            String encoding = MediaTypes.getCharset(mediaType);
+            body = encoding == null ? ((String) payload).getBytes() : ((String) payload).getBytes(encoding);
+        } else {
+            MessageBodyWriter bodyWriter = findWriter(payload.getClass(), null, new Annotation[0], mediaType);
+            if (bodyWriter == null) {
+                throw new IllegalArgumentException("cannot convert " + payload.getClass() + " to message body");
+            } else {
+                ByteArrayOutputStream baos = new ByteArrayOutputStream(1024);
+                bodyWriter.writeTo(payload, payload.getClass(), null, new Annotation[0], mediaType, EMPTY_HEADERS, baos);
+                body = baos.toByteArray();
+            }
+        }
+        return body;
     }
 }

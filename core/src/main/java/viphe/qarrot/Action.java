@@ -6,6 +6,8 @@ import com.google.inject.Key;
 import com.google.common.reflect.Invokable;
 import org.apache.commons.lang3.reflect.ConstructorUtils;
 
+import javax.ws.rs.Consumes;
+import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -26,7 +28,7 @@ public class Action {
     private final Method method;
     private final TypeToken typeToken;
     private final Invokable invokable;
-    private final Receives receives;
+    private final Consumes receives;
     private final MediaType receivedMediaType;
     private final MediaType sentMediaType;
     private final RouteSpec routeOut;
@@ -40,13 +42,14 @@ public class Action {
         this.typeToken = TypeToken.of(clazz);
         this.invokable = typeToken.method(method);
 
-        Receives receives = invokable.getAnnotation(Receives.class);
-        this.receives = receives == null ? (Receives) typeToken.getRawType().getAnnotation(Receives.class) : receives;
+        Consumes receives = invokable.getAnnotation(Consumes.class);
+        this.receives = receives == null ? (Consumes) typeToken.getRawType().getAnnotation(Consumes.class) : receives;
 
-        this.receivedMediaType = this.receives == null ? MediaType.TEXT_PLAIN_TYPE : MediaType.valueOf(this.receives.value());
+        this.receivedMediaType = this.receives == null ? MediaType.TEXT_PLAIN_TYPE : MediaType.valueOf(this.receives.value()[0]);
 
-        Sends sends = invokable.getAnnotation(Sends.class);
-        this.sentMediaType = sends == null ? MediaType.TEXT_PLAIN_TYPE : MediaType.valueOf(sends.value());
+        Produces sends = invokable.getAnnotation(Produces.class);
+        if (sends == null) sends = (Produces) clazz.getAnnotation(Produces.class);
+        this.sentMediaType = sends == null ? MediaType.TEXT_PLAIN_TYPE : MediaType.valueOf(sends.value()[0]);
 
         RouteOut routeOutAnnotation = invokable.getAnnotation(RouteOut.class);
         this.routeOut = routeOutAnnotation == null ? null : Routes.parse(routeOutAnnotation.value(), false);

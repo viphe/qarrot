@@ -43,3 +43,5 @@
   [ ] server (see also persistence of messages)
 [ ] use stuff from JAX-RS and simplify
 [ ] scan parent injectors
+[ ] our RuntimeDelegateImpl is going to create problems when integrating with Jersey (or other implementations)
+[ ] a RPC call that detects the MediaType (with JSON as the default for objects)

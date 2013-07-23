@@ -35,4 +35,9 @@ public class MediaTypes {
         }
         return new MediaType(mediaType.getType(), mediaType.getSubtype(), parameters);
     }
+
+    public static MediaType withCharset(String contentType, String encoding) {
+        MediaType mediaType = MediaType.valueOf(contentType);
+        return withCharset(mediaType, encoding);
+    }
 }
