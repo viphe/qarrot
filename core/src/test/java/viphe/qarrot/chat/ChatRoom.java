@@ -3,8 +3,10 @@ package viphe.qarrot.chat;
 
 import viphe.qarrot.*;
 
-@Receives(MediaTypes.TEXT_PLAIN)
-@Sends(MediaTypes.TEXT_PLAIN)
+import javax.ws.rs.core.MediaType;
+
+@Receives(MediaType.TEXT_PLAIN)
+@Sends(MediaType.TEXT_PLAIN)
 public class ChatRoom {
 
     @RouteIn("chat_room")

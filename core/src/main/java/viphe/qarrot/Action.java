@@ -6,6 +6,7 @@ import com.google.inject.Key;
 import com.google.common.reflect.Invokable;
 import org.apache.commons.lang3.reflect.ConstructorUtils;
 
+import javax.ws.rs.core.MediaType;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -26,8 +27,8 @@ public class Action {
     private final TypeToken typeToken;
     private final Invokable invokable;
     private final Receives receives;
-    private final String receivedMediaType;
-    private final String sentMediaType;
+    private final MediaType receivedMediaType;
+    private final MediaType sentMediaType;
     private final RouteSpec routeOut;
     private final ParamProvider[] paramProviders;
 
@@ -42,10 +43,10 @@ public class Action {
         Receives receives = invokable.getAnnotation(Receives.class);
         this.receives = receives == null ? (Receives) typeToken.getRawType().getAnnotation(Receives.class) : receives;
 
-        this.receivedMediaType = this.receives == null ? MediaTypes.TEXT_PLAIN : this.receives.value();
+        this.receivedMediaType = this.receives == null ? MediaType.TEXT_PLAIN_TYPE : MediaType.valueOf(this.receives.value());
 
         Sends sends = invokable.getAnnotation(Sends.class);
-        this.sentMediaType = sends == null ? MediaTypes.TEXT_PLAIN : sends.value();
+        this.sentMediaType = sends == null ? MediaType.TEXT_PLAIN_TYPE : MediaType.valueOf(sends.value());
 
         RouteOut routeOutAnnotation = invokable.getAnnotation(RouteOut.class);
         this.routeOut = routeOutAnnotation == null ? null : Routes.parse(routeOutAnnotation.value(), false);
@@ -53,7 +54,7 @@ public class Action {
         this.paramProviders = createParamProviders(this.invokable, receivedMediaType);
     }
 
-    private static ParamProvider[] createParamProviders(Invokable invokable, String receivedMediaType) {
+    private static ParamProvider[] createParamProviders(Invokable invokable, MediaType receivedMediaType) {
         List<Parameter> parameters = invokable.getParameters();
         ParamProvider[] paramProviders = new ParamProvider[parameters.size()];
 
@@ -82,7 +83,7 @@ public class Action {
         Object actionObject = event.getInjector().getProvider(bindingKey).get();
         try {
             Object result;
-            String resultMediaType = sentMediaType;
+            MediaType resultMediaType = sentMediaType;
             boolean isError;
             try {
                 result = method.invoke(actionObject, (Object[]) prepareArguments(event));
@@ -92,17 +93,17 @@ public class Action {
                 Class returnType = method.getReturnType();
                 if (Void.TYPE == returnType) {
                     result = new RpcError(t.getMessage(), t);
-                    resultMediaType = MediaTypes.APPLICATION_ERROR_JSON;
+                    resultMediaType = MediaTypes.asError(resultMediaType);
                 } else {
                     try {
                         result = ConstructorUtils.invokeExactConstructor(
                             returnType, new Object[] { t.getMessage(), t }, new Class[] { String.class, Throwable.class });
                     } catch (NoSuchMethodException e) {
                         result = new RpcError(t.getMessage(), t);
-                        resultMediaType = MediaTypes.APPLICATION_ERROR_JSON;
+                        resultMediaType = MediaTypes.asError(resultMediaType);
                     } catch (InstantiationException e) {
                         result = new RpcError(t.getMessage(), t);
-                        resultMediaType = MediaTypes.APPLICATION_ERROR_JSON;
+                        resultMediaType = MediaTypes.asError(resultMediaType);
                     }
                 }
             }
@@ -112,14 +113,14 @@ public class Action {
             if (replyTo != null) {
                 event.getQarrot().send(
                     Routes.queue(replyTo),
-                    AmqpUtils.propertiesBuilder(resultMediaType, null)
+                    AmqpUtils.propertiesBuilder(resultMediaType)
                         .correlationId(event.getProperties().getCorrelationId())
                         .build(),
                     result);
             }
 
             if (routeOut != null) {
-                event.getQarrot().send(routeOut, resultMediaType, null, result);
+                event.getQarrot().send(routeOut, resultMediaType, result);
             }
 
             event.getChannel().basicAck(event.getEnvelope().getDeliveryTag(), false);
@@ -132,7 +133,7 @@ public class Action {
         }
     }
 
-    private Object[] prepareArguments(Event event) {
+    private Object[] prepareArguments(Event event) throws IOException {
         Object[] args = new Object[paramProviders.length];
 
         for (int i = args.length; --i >= 0;) {

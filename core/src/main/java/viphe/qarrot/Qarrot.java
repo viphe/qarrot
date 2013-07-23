@@ -18,7 +18,10 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeoutException;
 
 public class Qarrot implements Closeable, RouteSpecMap {
@@ -162,6 +165,10 @@ public class Qarrot implements Closeable, RouteSpecMap {
 
     public void send(RouteSpec routeSpec, Object payload) throws IOException {
         send(routeSpec, "", (AMQP.BasicProperties) null, payload);
+    }
+
+    public void send(RouteSpec routeSpec, MediaType mediaType, Object payload) throws IOException {
+        send(routeSpec, "", mediaType, payload);
     }
 
     public void send(RouteSpec routeSpec, AMQP.BasicProperties properties, Object payload) throws IOException {
