@@ -29,6 +29,8 @@ public class Qarrot implements Closeable, RouteSpecMap {
     private static final Logger log = LoggerFactory.getLogger(Qarrot.class);
 
     private static final MultivaluedMap<String, String> EMPTY_HEADERS = MultivaluedMaps.empty();
+    private static final MultivaluedMap<String, Object> EMPTY_OBJECT_HEADERS = MultivaluedMaps.empty();
+    private static final Annotation[] EMPTY_ANNOTATIONS = new Annotation[0];
 
     private ConnectionFactory connectionFactory;
     private Connection connection;
@@ -145,7 +147,7 @@ public class Qarrot implements Closeable, RouteSpecMap {
         }
     }
 
-    private MessageBodyReader findReader(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
+    public MessageBodyReader findReader(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
         for (MessageBodyReader reader : messageBodyReaders) {
             if (reader.isReadable(type, genericType, annotations, mediaType)) {
                 return reader;
@@ -154,13 +156,35 @@ public class Qarrot implements Closeable, RouteSpecMap {
         return null;
     }
 
-    private MessageBodyWriter findWriter(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
+    public <T> T fromBytes(MediaType mediaType, byte[] bytes, Class<T> clazz) throws IOException {
+        MessageBodyReader<T> reader = findReader(clazz, null, EMPTY_ANNOTATIONS, mediaType);
+        if (reader == null) {
+            throw new IllegalArgumentException("cannot convert bytes (" + mediaType + ") to " + clazz);
+        }
+        return reader.readFrom(clazz, null, EMPTY_ANNOTATIONS, mediaType, EMPTY_HEADERS, new ByteArrayInputStream(bytes));
+    }
+
+    public MessageBodyWriter findWriter(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
         for (MessageBodyWriter writer : messageBodyWriters) {
             if (writer.isWriteable(type, genericType, annotations, mediaType)) {
                 return writer;
             }
         }
         return null;
+    }
+    
+    public <T> byte[] toBytes(MediaType mediaType, T o, Class<T> clazz) throws IOException {
+        if (o == null) {
+            return null;
+        }
+        
+        MessageBodyWriter<T> writer = findWriter(clazz, null, EMPTY_ANNOTATIONS, mediaType);
+        if (writer == null) {
+            throw new IllegalArgumentException("cannot convert " + clazz.getName() + " into byte[] (" + mediaType + ")");
+        }
+        ByteArrayOutputStream baos = new ByteArrayOutputStream(512);
+        writer.writeTo(o, clazz, null, EMPTY_ANNOTATIONS, mediaType, EMPTY_OBJECT_HEADERS, baos);
+        return baos.toByteArray();
     }
 
     public void send(RouteSpec routeSpec, Object payload) throws IOException {
@@ -209,14 +233,14 @@ public class Qarrot implements Closeable, RouteSpecMap {
 
         MediaType responseMediaType = MediaType.valueOf(response.getProperties().getContentType());
         if (MediaTypes.isError(responseMediaType)) {
-            MessageBodyReader bodyReader = findReader(RpcError.class, null, new Annotation[0], responseMediaType);
+            MessageBodyReader bodyReader = findReader(RpcError.class, null, EMPTY_ANNOTATIONS, responseMediaType);
             if (bodyReader == null) {
                 throw new IOException("unknown remote error");
 
             } else {
                 ByteArrayInputStream bais = new ByteArrayInputStream(response.getBody());
                 RpcError rpcError = (RpcError)
-                    bodyReader.readFrom(RpcError.class, null, new Annotation[0], responseMediaType, EMPTY_HEADERS, bais);
+                    bodyReader.readFrom(RpcError.class, null, EMPTY_ANNOTATIONS, responseMediaType, EMPTY_HEADERS, bais);
                 if (rpcError == null) {
                     throw new IOException("unknown remote error");
                 }  else {
@@ -225,37 +249,11 @@ public class Qarrot implements Closeable, RouteSpecMap {
             }
 
         } else {
-            MessageBodyReader bodyReader = findReader(responseClass, null, new Annotation[0], responseMediaType);
-            if (bodyReader == null) {
-                throw new IllegalArgumentException("no body reader configured for " + responseClass.getName());
-            } else {
-                ByteArrayInputStream bais = new ByteArrayInputStream(response.getBody());
-                Object result =
-                    bodyReader.readFrom(responseClass, null, new Annotation[0], responseMediaType, EMPTY_HEADERS, bais);
-                return responseClass.cast(result);
-            }
+            return fromBytes(responseMediaType, response.getBody(), responseClass);
         }
     }
 
     private byte[] getBytes(MediaType mediaType, Object payload) throws IOException {
-        byte[] body;
-        if (payload == null) {
-            body = null;
-        } else if (payload instanceof byte[]) {
-            body = (byte[]) payload;
-        } else if (payload instanceof String) {
-            String encoding = MediaTypes.getCharset(mediaType);
-            body = encoding == null ? ((String) payload).getBytes() : ((String) payload).getBytes(encoding);
-        } else {
-            MessageBodyWriter bodyWriter = findWriter(payload.getClass(), null, new Annotation[0], mediaType);
-            if (bodyWriter == null) {
-                throw new IllegalArgumentException("cannot convert " + payload.getClass() + " to message body");
-            } else {
-                ByteArrayOutputStream baos = new ByteArrayOutputStream(1024);
-                bodyWriter.writeTo(payload, payload.getClass(), null, new Annotation[0], mediaType, EMPTY_HEADERS, baos);
-                body = baos.toByteArray();
-            }
-        }
-        return body;
+        return toBytes(mediaType, payload, (Class<Object>) (payload == null ? null : payload.getClass()));
     }
 }

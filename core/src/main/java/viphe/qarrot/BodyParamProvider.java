@@ -3,32 +3,21 @@ package viphe.qarrot;
 import javax.ws.rs.core.MediaType;
 import java.io.IOException;
 
-/**
- * Created with IntelliJ IDEA.
- * User: viphe
- * Date: 7/21/13
- * Time: 12:50 AM
- * To change this template use File | Settings | File Templates.
- */
-public class BodyParamProvider implements ParamProvider {
+public class BodyParamProvider<T> extends ParamProvider<T> {
 
     private final MediaType mediaType;
 
 
-    public BodyParamProvider(MediaType mediaType) {
+    public BodyParamProvider(Class<T> resultType, MediaType mediaType) {
+        super(resultType);
+        if (mediaType == null) throw new NullPointerException("'mediaType' cannot be null");
         this.mediaType = mediaType;
     }
 
     @Override
-    public Object get(Event event) throws IOException {
+    public T get(Event event) throws IOException {
         MediaType consumedMediaType =
             this.mediaType == null ? MediaType.valueOf(event.getProperties().getContentType()) : mediaType;
-
-        if (MediaType.TEXT_PLAIN_TYPE.isCompatible(consumedMediaType)) {
-            String encoding = MediaTypes.getCharset(consumedMediaType);
-            return encoding == null ? new String(event.getBody()) : new String(event.getBody(), encoding);
-        } else {
-            throw new RuntimeException("unsupported " + consumedMediaType + " ==> String");
-        }
+        return event.getQarrot().fromBytes(consumedMediaType, event.getBody(), resultType);
     }
 }

@@ -1,13 +1,14 @@
 package viphe.qarrot;
 
-import com.google.inject.Injector;
-import com.rabbitmq.client.AMQP;
-import com.rabbitmq.client.Channel;
-import com.rabbitmq.client.Envelope;
-
 import java.io.IOException;
 
-public interface ParamProvider {
+public abstract class ParamProvider<T> {
 
-    Object get(Event event) throws IOException;
+    protected Class<T> resultType;
+
+    protected ParamProvider(Class<T> resultType) {
+        this.resultType = resultType;
+    }
+
+    public abstract T get(Event event) throws IOException;
 }

@@ -63,11 +63,11 @@ public class Action {
 
         for (int i = parameters.size(); --i >= 0;) {
             Parameter parameter = parameters.get(i);
-            if (parameter.getType().isAssignableFrom(String.class)) {
-                paramProviders[i] = new BodyParamProvider(receivedMediaType);
-
-            } else if (parameter.getType().isAssignableFrom(Qarrot.class)) {
+            if (parameter.getType().isAssignableFrom(Qarrot.class)) {
                 paramProviders[i] = new QarrotParamProvider();
+
+            } else if (parameter.getType().getType() instanceof Class) {
+                paramProviders[i] = new BodyParamProvider((Class<?>) parameter.getType().getType(), receivedMediaType);
 
             } else {
                 throw new RuntimeException("unsupported parameter " + parameter);
