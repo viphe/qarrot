@@ -27,8 +27,8 @@ public class MediaTypeHeaderDelegate implements RuntimeDelegate.HeaderDelegate<M
     public MediaType fromString(String value) throws IllegalArgumentException {
         Matcher matcher = PATTERN.matcher(value);
         if (matcher.matches()) {
-            String type = matcher.group(1);
-            String subtype = matcher.group(2);
+            String type = decode(matcher.group(1));
+            String subtype = decode(matcher.group(2));
 
             Map<String, String> parameters = null;
             if (matcher.group(4) != null) {
@@ -36,12 +36,8 @@ public class MediaTypeHeaderDelegate implements RuntimeDelegate.HeaderDelegate<M
                 for (String paramToken : paramTokens) {
                     String[] keyValue = paramToken.split("=");
                     String paramKey, paramValue;
-                    try {
-                        paramKey = URLDecoder.decode(keyValue[0], "UTF-8");
-                        paramValue = keyValue.length == 0 ? null : URLDecoder.decode(keyValue[1], "UTF-8");
-                    } catch (UnsupportedEncodingException e) {
-                        throw new RuntimeException("unexpected error", e);
-                    }
+                    paramKey = decode(keyValue[0]);
+                    paramValue = keyValue.length == 0 ? null : decode(keyValue[1]);
                     if (parameters == null) parameters = new LinkedHashMap<String, String>();
                     parameters.put(paramKey, paramValue);
                 }
@@ -57,7 +53,7 @@ public class MediaTypeHeaderDelegate implements RuntimeDelegate.HeaderDelegate<M
 
     @Override
     public String toString(MediaType value) {
-        StringBuilder sb = new StringBuilder(value.getType()).append('/').append(value.getSubtype());
+        StringBuilder sb = new StringBuilder(encode(value.getType())).append('/').append(encode(value.getSubtype()));
 
         boolean first = true;
         for (Map.Entry<String, String> e : value.getParameters().entrySet()) {
@@ -68,14 +64,25 @@ public class MediaTypeHeaderDelegate implements RuntimeDelegate.HeaderDelegate<M
                 sb.append('&');
             }
 
-            try {
-                sb.append(URLEncoder.encode(e.getKey(), "UTF-8"))
-                    .append('=').append(URLEncoder.encode(e.getValue(), "UTF-8"));
-            } catch (UnsupportedEncodingException uee) {
-                throw new RuntimeException("unexpected error", uee);
-            }
+            sb.append(encode(e.getKey())).append('=').append(encode(e.getValue()));
         }
 
         return sb.toString();
+    }
+
+    private String decode(String s) {
+        try {
+            return URLDecoder.decode(s, "UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            throw new RuntimeException("unexpected error", e);
+        }
+    }
+
+    private String encode(String s) {
+        try {
+            return URLEncoder.encode(s, "UTF-8");
+        } catch (UnsupportedEncodingException uee) {
+            throw new RuntimeException("unexpected error", uee);
+        }
     }
 }

@@ -8,7 +8,10 @@ import viphe.qarrot.Qarrot;
 
 import javax.ws.rs.core.MediaType;
 
-import static org.junit.Assert.assertEquals;
+import java.io.IOException;
+import java.util.concurrent.TimeoutException;
+
+import static org.junit.Assert.*;
 
 public class BeerTest {
 
@@ -26,11 +29,23 @@ public class BeerTest {
         BeerServer beerServer = server.getInjector().getInstance(BeerServer.class);
 
         Qarrot thirstyClient = new Qarrot(new ConnectionFactory());
-        Beer beer = thirstyClient.call("bar", 400000, MediaType.TEXT_PLAIN_TYPE, "belgian", Beer.class);
+        thirstyClient.configure(null);
 
+        Beer beer = thirstyClient.call("bar", 400000, MediaType.TEXT_PLAIN_TYPE, "belgian", Beer.class);
         assertEquals("belgian", beer.type);
         assertEquals(1, beerServer.ordered.size());
         assertEquals("belgian", beerServer.ordered.get(0));
+
+        beer = thirstyClient.call("bar", 400000, MediaType.TEXT_PLAIN_TYPE, "cheapest", Beer.class);
+        assertNull(beer);
+
+        try {
+            thirstyClient.call("bar", 400000, MediaType.TEXT_PLAIN_TYPE, "martian", Beer.class);
+            fail("was expecting an error");
+        } catch (IOException e) {
+            // expected
+            assertTrue(e.getMessage().contains("martian"));
+        }
     }
 
 }

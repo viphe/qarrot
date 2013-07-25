@@ -1,16 +1,16 @@
-[ ] @Consumers --> @Receives
+[f] @Consumers --> @Receives
   --> note that it shouldn't be useful in most cases as content types transit with messages
-[ ] @Produces --> @Sends (allow array of values like Jersey?)
+[f] @Produces --> @Sends (allow array of values like Jersey?)
 [x] gather message data into an Event object?
 [ ] body converters (reader/writer in Jersey)
   --> driven by content type
   [x] interface ==> using MessageBodyReader/Writer
   [ ] injection
-  [ ] String using encoding
-  [ ] bytes
-  [ ] JSON
-    [ ] Jackson by default
-      [ ] use injected ObjectMapper
+  [x] String using encoding
+  [x] bytes
+  [x] JSON
+    [x] Jackson by default
+      [x] use injected ObjectMapper
 [ ] parameter providers
   [ ] they should be available to normal injection (i.e. Guice) too somehow
     --> requires an InjectableProvider that is a factory of Injectables that are providers for specific events
@@ -24,7 +24,7 @@
   [ ] Event
   [x] Qarrot
 [ ] RPCs
-  [ ] can we return null values?
+  [ ] can we return null values? --> test it
   [ ] if method returns "void", return null
   [ ] if method throws Exception, try to create an instance of the return type (if some payload object class)
     with a the (String, Throwable) constructor
@@ -44,4 +44,9 @@
 [ ] use stuff from JAX-RS and simplify
 [ ] scan parent injectors
 [ ] our RuntimeDelegateImpl is going to create problems when integrating with Jersey (or other implementations)
+  --> one possibility is to transfer it into a separate project
 [ ] a RPC call that detects the MediaType (with JSON as the default for objects)
+[ ] see what are the options to avoid dragging Guice into the arena by default
+  --> could do something like Jersey Application
+[ ] test injection of ObjectMappers
+[ ] we shouldn't have to call configure if we don't have any module to provide

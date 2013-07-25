@@ -16,9 +16,11 @@ import java.lang.reflect.Type;
  */
 public class ByteArrayConverter implements MessageBodyWriter<byte[]>, MessageBodyReader<byte[]> {
 
+    public static final ByteArrayConverter INSTANCE = new ByteArrayConverter();
+
     @Override
     public boolean isReadable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
-        return true;
+        return byte[].class.equals(type);
     }
 
     @Override
@@ -30,16 +32,16 @@ public class ByteArrayConverter implements MessageBodyWriter<byte[]>, MessageBod
 
     @Override
     public boolean isWriteable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
-        return true;  //To change body of implemented methods use File | Settings | File Templates.
+        return byte[].class.equals(type);
     }
 
     @Override
     public long getSize(byte[] bytes, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
-        return 0;  //To change body of implemented methods use File | Settings | File Templates.
+        return bytes.length;
     }
 
     @Override
     public void writeTo(byte[] bytes, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType, MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream) throws IOException, WebApplicationException {
-        //To change body of implemented methods use File | Settings | File Templates.
+        IOUtils.copy(new ByteArrayInputStream(bytes), entityStream);
     }
 }

@@ -24,6 +24,9 @@ dependencies {
   compile 'javax.ws.rs:jsr311-api:1.1.1'
   compile 'com.google.inject:guice:3.0'
 
+  // JSON
+  compile 'org.codehaus.jackson:jackson-jaxrs:1.9.12'
+
   // RABBIT MQ
   compile 'com.rabbitmq:amqp-client:3.0.4'
 

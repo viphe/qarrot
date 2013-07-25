@@ -1,8 +1,11 @@
 package viphe.qarrot;
 
 import com.google.inject.*;
+import com.google.inject.util.Modules;
 import com.rabbitmq.client.*;
 import com.rabbitmq.client.AMQP.BasicProperties;
+import org.codehaus.jackson.jaxrs.JacksonJsonProvider;
+import org.codehaus.jackson.map.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,6 +54,11 @@ public class Qarrot implements Closeable, RouteSpecMap {
         this.connectionFactory = connectionFactory;
         this.connection = connectionFactory.newConnection();
         this.channel = connection.createChannel();
+
+        messageBodyReaders.add(ByteArrayConverter.INSTANCE);
+        messageBodyWriters.add(ByteArrayConverter.INSTANCE);
+        messageBodyReaders.add(StringConverter.INSTANCE);
+        messageBodyWriters.add(StringConverter.INSTANCE);
     }
 
     @Override
@@ -72,6 +80,7 @@ public class Qarrot implements Closeable, RouteSpecMap {
         @Override
         protected void configure() {
             bind(Qarrot.class).toInstance(Qarrot.this);
+            bind(ObjectMapper.class);
         }
     }
 
@@ -83,7 +92,13 @@ public class Qarrot implements Closeable, RouteSpecMap {
     }
 
     public void configure(Module module) throws IOException {
-        globalInjector = Guice.createInjector(new QarrotModule(), module);
+        Module totalModule = module == null ? new QarrotModule() : Modules.override(new QarrotModule()).with(module);
+        globalInjector = Guice.createInjector(totalModule);
+
+        JacksonJsonProvider jacksonJsonProvider = globalInjector.getInstance(JacksonJsonProvider.class);
+        messageBodyReaders.add(jacksonJsonProvider);
+        messageBodyWriters.add(jacksonJsonProvider);
+
         scanBindings();
         declareConsumers();
     }
@@ -108,13 +123,11 @@ public class Qarrot implements Closeable, RouteSpecMap {
                     }
                 }
 
-                if (boundClass.getAnnotation(Provider.class) != null) {
-                    if (MessageBodyReader.class.isAssignableFrom(boundClass)) {
-                        messageBodyReaders.add((MessageBodyReader) globalInjector.getInstance(bindingKey));
-                    }
-                    if (MessageBodyWriter.class.isAssignableFrom(boundClass)) {
-                        messageBodyWriters.add((MessageBodyWriter) globalInjector.getInstance(bindingKey));
-                    }
+                if (MessageBodyReader.class.isAssignableFrom(boundClass)) {
+                    messageBodyReaders.add(0, (MessageBodyReader) globalInjector.getInstance(bindingKey));
+                }
+                if (MessageBodyWriter.class.isAssignableFrom(boundClass)) {
+                    messageBodyWriters.add(0, (MessageBodyWriter) globalInjector.getInstance(bindingKey));
                 }
             }
         }
@@ -161,7 +174,7 @@ public class Qarrot implements Closeable, RouteSpecMap {
         if (reader == null) {
             throw new IllegalArgumentException("cannot convert bytes (" + mediaType + ") to " + clazz);
         }
-        return reader.readFrom(clazz, null, EMPTY_ANNOTATIONS, mediaType, EMPTY_HEADERS, new ByteArrayInputStream(bytes));
+        return reader.readFrom(clazz, clazz, EMPTY_ANNOTATIONS, mediaType, EMPTY_HEADERS, new ByteArrayInputStream(bytes));
     }
 
     public MessageBodyWriter findWriter(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
@@ -173,17 +186,18 @@ public class Qarrot implements Closeable, RouteSpecMap {
         return null;
     }
     
-    public <T> byte[] toBytes(MediaType mediaType, T o, Class<T> clazz) throws IOException {
+    public <T> byte[] toBytes(MediaType mediaType, T o) throws IOException {
         if (o == null) {
             return null;
         }
-        
+
+        Class<T> clazz = (Class<T>) o.getClass();
         MessageBodyWriter<T> writer = findWriter(clazz, null, EMPTY_ANNOTATIONS, mediaType);
         if (writer == null) {
             throw new IllegalArgumentException("cannot convert " + clazz.getName() + " into byte[] (" + mediaType + ")");
         }
         ByteArrayOutputStream baos = new ByteArrayOutputStream(512);
-        writer.writeTo(o, clazz, null, EMPTY_ANNOTATIONS, mediaType, EMPTY_OBJECT_HEADERS, baos);
+        writer.writeTo(o, clazz, clazz, EMPTY_ANNOTATIONS, mediaType, EMPTY_OBJECT_HEADERS, baos);
         return baos.toByteArray();
     }
 
@@ -209,7 +223,7 @@ public class Qarrot implements Closeable, RouteSpecMap {
 
     public void send(RouteSpec routeSpec, String routingKey, AMQP.BasicProperties properties, Object payload) throws IOException {
         Route route = routeSpec.declareOn(channel, this);
-        route.publishOn(channel, routingKey, properties, ((String) payload).getBytes());
+        route.publishOn(channel, routingKey, properties, toBytes(MediaTypes.valueOf(properties), payload));
     }
 
     public RpcResponse call(String queue, long timeout, BasicProperties properties, byte[] body)
@@ -233,19 +247,17 @@ public class Qarrot implements Closeable, RouteSpecMap {
 
         MediaType responseMediaType = MediaType.valueOf(response.getProperties().getContentType());
         if (MediaTypes.isError(responseMediaType)) {
-            MessageBodyReader bodyReader = findReader(RpcError.class, null, EMPTY_ANNOTATIONS, responseMediaType);
-            if (bodyReader == null) {
+            RpcError rpcError;
+            try {
+                rpcError = fromBytes(responseMediaType, response.getBody(), RpcError.class);
+            } catch (IllegalArgumentException e) {
                 throw new IOException("unknown remote error");
+            }
 
-            } else {
-                ByteArrayInputStream bais = new ByteArrayInputStream(response.getBody());
-                RpcError rpcError = (RpcError)
-                    bodyReader.readFrom(RpcError.class, null, EMPTY_ANNOTATIONS, responseMediaType, EMPTY_HEADERS, bais);
-                if (rpcError == null) {
-                    throw new IOException("unknown remote error");
-                }  else {
-                    throw new IOException(rpcError.error + "\n" + rpcError.trace);
-                }
+            if (rpcError == null) {
+                throw new IOException("unknown remote error");
+            }  else {
+                throw new IOException(rpcError.error + "\n" + rpcError.trace);
             }
 
         } else {
@@ -254,6 +266,6 @@ public class Qarrot implements Closeable, RouteSpecMap {
     }
 
     private byte[] getBytes(MediaType mediaType, Object payload) throws IOException {
-        return toBytes(mediaType, payload, (Class<Object>) (payload == null ? null : payload.getClass()));
+        return toBytes(mediaType, payload);
     }
 }

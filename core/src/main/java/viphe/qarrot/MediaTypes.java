@@ -1,7 +1,9 @@
 package viphe.qarrot;
 
+import com.rabbitmq.client.AMQP;
+
 import javax.ws.rs.core.MediaType;
-import java.util.Collections;
+import java.nio.charset.Charset;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -14,8 +16,21 @@ import java.util.Map;
  */
 public class MediaTypes {
 
+    public static final String DEFAULT_ENCODING = "UTF-8";
+    public static final Charset DEFAULT_CHARSET = Charset.forName(DEFAULT_ENCODING);
+
+
+    public static MediaType valueOf(AMQP.BasicProperties properties) {
+        return properties == null ? null : withCharset(properties.getContentType(), properties.getContentEncoding());
+    }
+
     public static String getCharset(MediaType mediaType) {
-        return mediaType.getParameters().get("charset");
+        return mediaType == null ? null : mediaType.getParameters().get("charset");
+    }
+
+    public static String getDefaultedCharset(MediaType mediaType) {
+        String charset = getCharset(mediaType);
+        return charset == null ? DEFAULT_ENCODING : charset;
     }
 
     public static boolean isError(MediaType mediaType) {
