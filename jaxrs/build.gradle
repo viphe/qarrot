@@ -1,0 +1,46 @@
+apply plugin: 'java'
+apply plugin: 'maven-publish'
+
+group = file('../GROUP').text.trim()
+version = file('../VERSION').text.trim()
+def buildNumber = '' + System.currentTimeMillis()
+
+sourceCompatibility = 1.6
+
+repositories {7
+  mavenCentral()
+}
+
+dependencies {
+
+  compile 'javax.ws.rs:jsr311-api:1.1.1'
+
+  // TESTS
+  testCompile 'junit:junit:4.11'
+
+}
+
+jar  {
+  manifest {
+    attributes 'Implementation-Title': 'Jax-RS Stub classes for Qarrot',
+      'Implementation-Version': version,
+      'Built-By': System.getProperty('user.name'),
+      'Built-Date': new Date(),
+      'Built-JDK': System.getProperty('java.version'),
+      'Built-Gradle': gradle.gradleVersion
+  }
+}
+
+publishing {
+  publications {
+    mavenJava(MavenPublication) {
+      from components.java
+    }
+  }
+  repositories {
+    maven {
+      name 'project'
+      url uri('../.m2')
+    }
+  }
+}

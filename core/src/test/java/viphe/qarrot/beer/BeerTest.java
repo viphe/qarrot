@@ -33,6 +33,7 @@ public class BeerTest {
 
         Beer beer = thirstyClient.call("bar", 400000, MediaType.TEXT_PLAIN_TYPE, "belgian", Beer.class);
         assertEquals("belgian", beer.type);
+        assertNotNull(beer.replyTo);
         assertEquals(1, beerServer.ordered.size());
         assertEquals("belgian", beerServer.ordered.get(0));
 

@@ -5,7 +5,7 @@
 [ ] body converters (reader/writer in Jersey)
   --> driven by content type
   [x] interface ==> using MessageBodyReader/Writer
-  [ ] injection
+  [x] injection
   [x] String using encoding
   [x] bytes
   [x] JSON
@@ -23,6 +23,7 @@
     [ ] delivery tag (necessary for ack)
   [ ] Event
   [x] Qarrot
+  [ ] should we pass Qarrot or some "simpler" facade interface?
 [ ] RPCs
   [ ] can we return null values? --> test it
   [ ] if method returns "void", return null
@@ -50,3 +51,18 @@
   --> could do something like Jersey Application
 [ ] test injection of ObjectMappers
 [ ] we shouldn't have to call configure if we don't have any module to provide
+[ ] allow to specify clients as proxied interfaces
+  public interface MyClient {
+    @RoutesOut("exch/")
+    void sendUpdate(Update update);
+  }
+[ ] support for chunked content (special media type?)
+[ ] support for multipart?
+[x] support for array content[]? ==> not compatible for JSON... custom readers/writers can handle that
+[ ] could provide AMQP Properties and/or its headers as a header multivalue map to readers and writers
+[ ] split in subprojects
+  - qarrot-injection: abstraction (as simple as possible) allowing to use different injection framework
+  - qarrot-guice: implementation of qarrot-injection based on Guice
+  - qarrot-core: most of Qarrot
+  [x] qarrot-jaxrs: stub MediaTypeHeaderDelegate, META-INF stub elements that prevent to use jax-rs without stuff like
+    the Jersey libraries (would be imported as test-runtime for instance)

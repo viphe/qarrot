@@ -1,5 +1,6 @@
 package viphe.qarrot.beer;
 
+import viphe.qarrot.AmqpProp;
 import viphe.qarrot.RouteIn;
 
 import javax.ws.rs.Consumes;
@@ -16,11 +17,11 @@ public class BeerServer {
 
     @RouteIn("bar")
     @Consumes(MediaType.TEXT_PLAIN)
-    public Beer serveBeer(String beerType) {
+    public Beer serveBeer(String beerType, @AmqpProp("replyTo") String replyTo) {
         ordered.add(beerType);
 
         if ("belgian".equals(beerType)) {
-            return new Beer(beerType);
+            return new Beer(beerType, replyTo);
 
         } else if ("cheapest".equals(beerType)) {
             return null;

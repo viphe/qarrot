@@ -39,7 +39,17 @@ public class MediaTypes {
 
     public static MediaType asError(MediaType mediaType) {
         Map<String, String> parameters = new LinkedHashMap<String, String>(mediaType.getParameters());
-        parameters.put("charset", "true");
+        parameters.put("error", "true");
+        return new MediaType(mediaType.getType(), mediaType.getSubtype(), parameters);
+    }
+
+    public static boolean isNull(MediaType mediaType) {
+        return Boolean.valueOf(mediaType.getParameters().get("null"));
+    }
+
+    public static MediaType asNull(MediaType mediaType) {
+        Map<String, String> parameters = new LinkedHashMap<String, String>(mediaType.getParameters());
+        parameters.put("null", "true");
         return new MediaType(mediaType.getType(), mediaType.getSubtype(), parameters);
     }
 

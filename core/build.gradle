@@ -1,13 +1,18 @@
 apply plugin: 'java'
 apply plugin: 'war'
 
-version = '1.0'
+group = file('../GROUP').text.trim()
+version = file('../VERSION').text.trim()
 def buildNumber = '' + System.currentTimeMillis()
 
-sourceCompatibility = 1.7
+sourceCompatibility = 1.6
 
 repositories {
   mavenCentral()
+  maven {
+    name 'project'
+    url uri('../.m2')
+  }
 }
 
 dependencies {
@@ -32,5 +37,17 @@ dependencies {
 
   // TESTS
   testCompile 'junit:junit:4.11'
+  testRuntime "viphe.qarrot:qarrot-jaxrs:$version"
 
+}
+
+jar {
+  manifest {
+    attributes 'Implementation-Title': 'Maven filter for Gradle plugin',
+      'Implementation-Version': version,
+      'Built-By': System.getProperty('user.name'),
+      'Built-Date': new Date(),
+      'Built-JDK': System.getProperty('java.version'),
+      'Built-Gradle': gradle.gradleVersion
+  }
 }

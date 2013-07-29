@@ -63,7 +63,11 @@ public class Action {
 
         for (int i = parameters.size(); --i >= 0;) {
             Parameter parameter = parameters.get(i);
-            if (parameter.getType().isAssignableFrom(Qarrot.class)) {
+            AmqpProp amqpProp = parameter.getAnnotation(AmqpProp.class);
+            if (amqpProp != null) {
+                paramProviders[i] = new AmqpPropProvider((Class<?>) parameter.getType().getType(), amqpProp.value());
+
+            } else if (parameter.getType().isAssignableFrom(Qarrot.class)) {
                 paramProviders[i] = new QarrotParamProvider();
 
             } else if (parameter.getType().getType() instanceof Class) {

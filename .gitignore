@@ -6,6 +6,7 @@
 # Build artefacts
 build/
 out/
+.m2/
 
 # IDE & dev tools
 *.iml
