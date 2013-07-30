@@ -2,7 +2,7 @@
   --> note that it shouldn't be useful in most cases as content types transit with messages
 [f] @Produces --> @Sends (allow array of values like Jersey?)
 [x] gather message data into an Event object?
-[ ] body converters (reader/writer in Jersey)
+[x] body converters (reader/writer in Jersey)
   --> driven by content type
   [x] interface ==> using MessageBodyReader/Writer
   [x] injection
@@ -14,23 +14,27 @@
 [ ] parameter providers
   [ ] they should be available to normal injection (i.e. Guice) too somehow
     --> requires an InjectableProvider that is a factory of Injectables that are providers for specific events
-  [ ] body (with the help of body converters)
+  [x] body (with the help of body converters)
   [ ] AMQP.BasicProperties
   [ ] Channel
   [ ] @BindingKeyParam
   [ ] properties params
     [ ] @ContentType
     [ ] delivery tag (necessary for ack)
+  [ ] headers
   [ ] Event
   [x] Qarrot
   [ ] should we pass Qarrot or some "simpler" facade interface?
 [ ] RPCs
-  [ ] can we return null values?
-    [ ] try specifying null values by adding the "null" parameter to the media type
+  [x] can we return null values? ==> yes for JSON
+    [f] try specifying null values by adding the "null" parameter to the media type
+      --> only allowing null for media type converters that support it (in general, would be when
+          body empty or some ad hoc condition)
   [ ] if method returns "void", return null
-  [ ] if method throws Exception, try to create an instance of the return type (if some payload object class)
+  [x] if method throws Exception, try to create an instance of the return type (if some payload object class)
     with a the (String, Throwable) constructor
-  [ ] if no such constructor exists, return a RpcError as JSon with a "application/error" MIME type
+    ==> returning a special error object with the same media type decorated with an "error" parameter
+  [f] if no such constructor exists, return a RpcError as JSon with a "application/error" MIME type
   [ ] provide media type with response
 [ ] route spec parser
 [ ] auto-reconnect
@@ -43,19 +47,21 @@
 [ ] disconnections
   [ ] client
   [ ] server (see also persistence of messages)
-[ ] use stuff from JAX-RS and simplify
+[x] use stuff from JAX-RS and simplify
 [ ] scan parent injectors
-[ ] our RuntimeDelegateImpl is going to create problems when integrating with Jersey (or other implementations)
+[x] our RuntimeDelegateImpl is going to create problems when integrating with Jersey (or other implementations)
   --> one possibility is to transfer it into a separate project
 [ ] a RPC call that detects the MediaType (with JSON as the default for objects)
 [ ] see what are the options to avoid dragging Guice into the arena by default
   --> could do something like Jersey Application
-[ ] test injection of ObjectMappers
+[x] test injection of ObjectMappers
 [ ] we shouldn't have to call configure if we don't have any module to provide
 [ ] allow to specify clients as proxied interfaces
   public interface MyClient {
-    @RoutesOut("exch/")
+    @RouteOut("exch")
     void sendUpdate(Update update);
+    @RouteOut("==rpc_queue")
+    Result callRpc(String param1, int param2);
   }
 [ ] support for chunked content (special media type?)
 [ ] support for multipart?
