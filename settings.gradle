@@ -1,1 +1,1 @@
-include 'core', 'jaxrs'
+include 'jaxrs', 'core'

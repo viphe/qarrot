@@ -32,12 +32,12 @@ public class MediaTypeHeaderDelegate implements RuntimeDelegate.HeaderDelegate<M
 
             Map<String, String> parameters = null;
             if (matcher.group(4) != null) {
-                String[] paramTokens = matcher.group(4).split("&", -1);
+                String[] paramTokens = matcher.group(4).split(";", -1);
                 for (String paramToken : paramTokens) {
                     String[] keyValue = paramToken.split("=");
                     String paramKey, paramValue;
                     paramKey = decode(keyValue[0]);
-                    paramValue = keyValue.length == 0 ? null : decode(keyValue[1]);
+                    paramValue = keyValue.length <= 1 ? null : decode(keyValue[1]);
                     if (parameters == null) parameters = new LinkedHashMap<String, String>();
                     parameters.put(paramKey, paramValue);
                 }
@@ -55,15 +55,8 @@ public class MediaTypeHeaderDelegate implements RuntimeDelegate.HeaderDelegate<M
     public String toString(MediaType value) {
         StringBuilder sb = new StringBuilder(encode(value.getType())).append('/').append(encode(value.getSubtype()));
 
-        boolean first = true;
         for (Map.Entry<String, String> e : value.getParameters().entrySet()) {
-            if (first) {
-                first = false;
-                sb.append(';');
-            } else {
-                sb.append('&');
-            }
-
+            sb.append(';');
             sb.append(encode(e.getKey())).append('=').append(encode(e.getValue()));
         }
 

@@ -25,7 +25,8 @@
   [x] Qarrot
   [ ] should we pass Qarrot or some "simpler" facade interface?
 [ ] RPCs
-  [ ] can we return null values? --> test it
+  [ ] can we return null values?
+    [ ] try specifying null values by adding the "null" parameter to the media type
   [ ] if method returns "void", return null
   [ ] if method throws Exception, try to create an instance of the return type (if some payload object class)
     with a the (String, Throwable) constructor
@@ -66,3 +67,6 @@
   - qarrot-core: most of Qarrot
   [x] qarrot-jaxrs: stub MediaTypeHeaderDelegate, META-INF stub elements that prevent to use jax-rs without stuff like
     the Jersey libraries (would be imported as test-runtime for instance)
+[ ] MediaTypeHeaderDelegate
+  [ ] support quoted param values
+  [ ] unit tests

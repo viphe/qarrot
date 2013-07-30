@@ -34,22 +34,12 @@ public class MediaTypes {
     }
 
     public static boolean isError(MediaType mediaType) {
-        return Boolean.valueOf(mediaType.getParameters().get("error"));
+        return mediaType.getParameters().containsKey("error");
     }
 
     public static MediaType asError(MediaType mediaType) {
         Map<String, String> parameters = new LinkedHashMap<String, String>(mediaType.getParameters());
-        parameters.put("error", "true");
-        return new MediaType(mediaType.getType(), mediaType.getSubtype(), parameters);
-    }
-
-    public static boolean isNull(MediaType mediaType) {
-        return Boolean.valueOf(mediaType.getParameters().get("null"));
-    }
-
-    public static MediaType asNull(MediaType mediaType) {
-        Map<String, String> parameters = new LinkedHashMap<String, String>(mediaType.getParameters());
-        parameters.put("null", "true");
+        parameters.put("error", "");
         return new MediaType(mediaType.getType(), mediaType.getSubtype(), parameters);
     }
 

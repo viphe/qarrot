@@ -95,11 +95,13 @@ public class Qarrot implements Closeable, RouteSpecMap {
         Module totalModule = module == null ? new QarrotModule() : Modules.override(new QarrotModule()).with(module);
         globalInjector = Guice.createInjector(totalModule);
 
-        JacksonJsonProvider jacksonJsonProvider = globalInjector.getInstance(JacksonJsonProvider.class);
-        messageBodyReaders.add(jacksonJsonProvider);
-        messageBodyWriters.add(jacksonJsonProvider);
-
         scanBindings();
+
+        JacksonJsonProvider jacksonJsonProvider = globalInjector.getInstance(JacksonJsonProvider.class);
+        NullableConverter nullableJsonConverter = new NullableConverter(jacksonJsonProvider, jacksonJsonProvider);
+        messageBodyReaders.add(nullableJsonConverter);
+        messageBodyWriters.add(nullableJsonConverter);
+
         declareConsumers();
     }
 
