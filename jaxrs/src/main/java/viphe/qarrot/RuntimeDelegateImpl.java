@@ -3,6 +3,9 @@ package viphe.qarrot;
 import javax.ws.rs.core.*;
 import javax.ws.rs.ext.RuntimeDelegate;
 
+/**
+ * A limited implementation of RuntimeDelegate.
+ */
 public class RuntimeDelegateImpl extends RuntimeDelegate {
 
     @Override

@@ -2,13 +2,6 @@ package viphe.qarrot;
 
 import org.apache.commons.lang3.exception.ExceptionUtils;
 
-/**
- * Created with IntelliJ IDEA.
- * User: viphe
- * Date: 7/21/13
- * Time: 2:59 PM
- * To change this template use File | Settings | File Templates.
- */
 public class RpcError {
 
     public String error;

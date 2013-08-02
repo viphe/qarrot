@@ -76,3 +76,7 @@
 [ ] MediaTypeHeaderDelegate
   [ ] support quoted param values
   [ ] unit tests
+[ ] ChatServer example
+  [ ] @Path support
+    [ ] an endpoint is any class/instance that has a method annotated with @Consumes/@Produces/@Path/@RouteIn/@RouteOut
+  [ ] sub-resource support

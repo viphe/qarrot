@@ -270,4 +270,8 @@ public class Qarrot implements Closeable, RouteSpecMap {
     private byte[] getBytes(MediaType mediaType, Object payload) throws IOException {
         return toBytes(mediaType, payload);
     }
+
+    public void declare(RouteSpec routeSpec) throws IOException {
+        routeSpec.declareOn(channel, this);
+    }
 }

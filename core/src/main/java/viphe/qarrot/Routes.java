@@ -7,6 +7,10 @@ public class Routes {
         return route;
     }
 
+    public static Route exchange(String exchange) {
+        return new Route(exchange, null, null);
+    }
+
     public static RouteSpec parse(String routeSpec, boolean inbound) {
         if (routeSpec == null) throw new NullPointerException("'routeSpec' cannot be null");
         if (routeSpec.isEmpty()) throw new IllegalArgumentException("'routeSpec' cannot be empty");
