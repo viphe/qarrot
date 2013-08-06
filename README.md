@@ -2,7 +2,7 @@ Qarrot: a modest Java queue-app framework (pre-alpha)
 =====================================================
 
 Qarror is an attempt at providing a base for building RabbitMQ-enabled application in a way similar
-to webapps with Jersey.
+to webapps with Jersey. It's kinda RabbitMQ hijacking JAX-RS.
 
 It is very much in an experimental state for now, but here is an example of a resource class:
 
@@ -11,7 +11,7 @@ public class SantaClausMailbox {
 
     public List<String> letters = new ArrayList<String>();
 
-    @RouteIn("santa_claus")
+    @Path("santa_claus")
     @Consumes(MediaType.TEXT_PLAIN)
     public void receiveLetter(String letter) {
         letters.add(letter);

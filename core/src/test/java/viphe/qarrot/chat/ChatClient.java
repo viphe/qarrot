@@ -3,6 +3,7 @@ package viphe.qarrot.chat;
 import com.google.inject.Inject;
 import viphe.qarrot.*;
 
+import javax.ws.rs.Path;
 import javax.ws.rs.core.MediaType;
 import java.io.IOException;
 import java.util.concurrent.TimeoutException;
@@ -30,7 +31,7 @@ public class ChatClient {
         qarrot.send(Routes.queue("chat"), line);
     }
 
-    @RouteIn("&server")
+    @Path("&server")
     public void receiveLine(String line) {
         System.out.println("on client " + hashCode() + ": " + line);
     }

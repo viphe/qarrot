@@ -21,7 +21,7 @@ import java.util.List;
  * Time: 4:03 PM
  * To change this template use File | Settings | File Templates.
  */
-public class Action {
+public class EndPointMethod {
 
     private final RouteSpec routeIn;
     private final Key<?> bindingKey;
@@ -31,11 +31,10 @@ public class Action {
     private final Consumes receives;
     private final MediaType receivedMediaType;
     private final MediaType sentMediaType;
-    private final RouteSpec routeOut;
     private final ParamProvider[] paramProviders;
 
 
-    public Action(RouteSpec routeIn, Key<?> bindingKey, Class clazz, Method method) {
+    public EndPointMethod(RouteSpec routeIn, Key<?> bindingKey, Class clazz, Method method) {
         this.routeIn = routeIn;
         this.bindingKey = bindingKey;
         this.method = method;
@@ -50,9 +49,6 @@ public class Action {
         Produces sends = invokable.getAnnotation(Produces.class);
         if (sends == null) sends = (Produces) clazz.getAnnotation(Produces.class);
         this.sentMediaType = sends == null ? MediaType.TEXT_PLAIN_TYPE : MediaType.valueOf(sends.value()[0]);
-
-        RouteOut routeOutAnnotation = invokable.getAnnotation(RouteOut.class);
-        this.routeOut = routeOutAnnotation == null ? null : Routes.parse(routeOutAnnotation.value(), false);
 
         this.paramProviders = createParamProviders(this.invokable, receivedMediaType);
     }
@@ -124,10 +120,6 @@ public class Action {
                         .correlationId(event.getProperties().getCorrelationId())
                         .build(),
                     result);
-            }
-
-            if (routeOut != null) {
-                event.getQarrot().send(routeOut, resultMediaType, result);
             }
 
             event.getChannel().basicAck(event.getEnvelope().getDeliveryTag(), false);

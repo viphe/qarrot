@@ -9,6 +9,7 @@ import org.codehaus.jackson.map.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.ws.rs.Path;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.MessageBodyReader;
@@ -42,7 +43,7 @@ public class Qarrot implements Closeable, RouteSpecMap {
     private Module injectionConfig;
     private Injector globalInjector;
 
-    private List<Action> actions = new ArrayList<Action>();
+    private List<EndPointMethod> endPointMethods = new ArrayList<EndPointMethod>();
     private Map<String, RouteSpec> namedRouteSpecs = new HashMap<String, RouteSpec>();
     private List<MessageBodyReader> messageBodyReaders = new ArrayList<MessageBodyReader>();
     private List<MessageBodyWriter> messageBodyWriters = new ArrayList<MessageBodyWriter>();
@@ -116,10 +117,10 @@ public class Qarrot implements Closeable, RouteSpecMap {
                 for (Method method : boundClass.getMethods()) {
                     if ((method.getModifiers() & Modifier.STATIC) == 0) {
                         for (Annotation annotation : method.getAnnotations()) {
-                            if (annotation instanceof RouteIn) {
-                                RouteIn routeInSpec = (RouteIn) annotation;
-                                RouteSpec routeIn = Routes.parse(routeInSpec.value(), true);
-                                actions.add(new Action(routeIn, bindingKey, boundClass, method));
+                            if (annotation instanceof Path) {
+                              Path pathSpec = (Path) annotation;
+                              RouteSpec routeIn = Routes.parse(pathSpec.value(), true);
+                              endPointMethods.add(new EndPointMethod(routeIn, bindingKey, boundClass, method));
                             }
                         }
                     }
@@ -136,14 +137,14 @@ public class Qarrot implements Closeable, RouteSpecMap {
     }
 
     private void declareConsumers() throws IOException{
-        for (final Action action : actions) {
-            final RouteSpec routeSpec = action.getRouteIn();
+        for (final EndPointMethod endPointMethod : endPointMethods) {
+            final RouteSpec routeSpec = endPointMethod.getRouteIn();
             Route route = routeSpec.declareOn(channel, this);
 
-            log.debug("consuming on " + route.getQueue() + " ==> " + action);
+            log.debug("consuming on " + route.getQueue() + " ==> " + endPointMethod);
 
             boolean autoAck = false;
-            channel.basicConsume(route.getQueue(), autoAck, action.toString(),
+            channel.basicConsume(route.getQueue(), autoAck, endPointMethod.toString(),
                     new DefaultConsumer(channel) {
                         @Override
                         public void handleDelivery(String consumerTag,
@@ -156,7 +157,7 @@ public class Qarrot implements Closeable, RouteSpecMap {
                             String contentType = properties.getContentType();
                             long deliveryTag = envelope.getDeliveryTag();
 
-                            action.call(new Event(Qarrot.this, channel, envelope, properties, body));
+                            endPointMethod.call(new Event(Qarrot.this, channel, envelope, properties, body));
                         }
                     });
         }

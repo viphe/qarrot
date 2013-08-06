@@ -73,10 +73,42 @@
   - qarrot-core: most of Qarrot
   [x] qarrot-jaxrs: stub MediaTypeHeaderDelegate, META-INF stub elements that prevent to use jax-rs without stuff like
     the Jersey libraries (would be imported as test-runtime for instance)
-[ ] MediaTypeHeaderDelegate
-  [ ] support quoted param values
-  [ ] unit tests
+[x] MediaTypeHeaderDelegate
+  [x] support quoted param values
+  [x] unit tests
 [ ] ChatServer example
   [ ] @Path support
-    [ ] an endpoint is any class/instance that has a method annotated with @Consumes/@Produces/@Path/@RouteIn/@RouteOut
+    [ ] an endpoint is any class/instance that is directly or has a method
+      annotated with @Consumes or @Path or @POST(?)
   [ ] sub-resource support
+
+[ ] are @RouteIn and @RouteOut good ideas when we could have just had @Queue and @Exchange (or @Topic) or @Path?
+  --> @RouteOut allows to specify an exchange or a queue
+    --> however we could have decide to inject some interface instead
+    @Queue("my_app.my_queue") // or @Path("my_queue/my.key.*")?
+    public void handle(Notifier notifier) {
+      ...
+      notifier.send("my.key", new Notification(...));
+    }
+    interface Notifier {
+        @Exchange(...) or @Queue(...) or @Path("my_exchange/{key}/") or @Path("queue") or @Path("#ref")
+        void send(@PathParam("key") String routingKey, Notification notification);
+    }
+  --> if we use those proxy interfaces, we just need @Path
+  --> cases we are mostly interested in:
+    a) incoming:
+      1. queue
+      2. exchange (+ wild-card binding key (depending on exchange type) + anonymous queue)
+      3. exchange + binding key (+ anonymous queue)
+    b) outgoing:
+      1. queue
+      2. exchange + routing info (type differs and may be optional depending on exchange type)
+    c) RPCs (basically (a.1) + exchange specified at runtime by the request)
+    d) anything else should be handled through references "#ref"
+      e.g. "exch/k1.*.k2/queu"
+  [x] how to distinguish between a resource interface and a client interface
+    ==> there is no need to differentiate although the following would have interesting results
+      Notifier handle(Notifier notifier, Msg msg) {
+        return notifier;
+      }
+      ==> would basically send msg on whatever the Notifier is pointing to

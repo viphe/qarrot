@@ -12,9 +12,6 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/**
- *
- */
 public class MediaTypeHeaderDelegate implements RuntimeDelegate.HeaderDelegate<MediaType> {
 
     private static final Pattern PATTERN = Pattern.compile("^(.*?)/(.*?)(;(.*))?$");
@@ -27,19 +24,15 @@ public class MediaTypeHeaderDelegate implements RuntimeDelegate.HeaderDelegate<M
     public MediaType fromString(String value) throws IllegalArgumentException {
         Matcher matcher = PATTERN.matcher(value);
         if (matcher.matches()) {
-            String type = decode(matcher.group(1));
-            String subtype = decode(matcher.group(2));
+            String type = matcher.group(1);
+            String subtype = matcher.group(2);
 
             Map<String, String> parameters = null;
             if (matcher.group(4) != null) {
                 String[] paramTokens = matcher.group(4).split(";", -1);
                 for (String paramToken : paramTokens) {
-                    String[] keyValue = paramToken.split("=");
-                    String paramKey, paramValue;
-                    paramKey = decode(keyValue[0]);
-                    paramValue = keyValue.length <= 1 ? null : decode(keyValue[1]);
-                    if (parameters == null) parameters = new LinkedHashMap<String, String>();
-                    parameters.put(paramKey, paramValue);
+                  if (parameters == null) parameters = new LinkedHashMap<String, String>();
+                  parseParam(parameters, paramToken);
                 }
             }
             if (parameters == null) parameters = EMPTY_PARAMETERS;
@@ -51,31 +44,49 @@ public class MediaTypeHeaderDelegate implements RuntimeDelegate.HeaderDelegate<M
         }
     }
 
-    @Override
-    public String toString(MediaType value) {
-        StringBuilder sb = new StringBuilder(encode(value.getType())).append('/').append(encode(value.getSubtype()));
+  private void parseParam(Map<String, String> parameters, String paramToken) {
+    String[] keyValue = paramToken.split("=");
 
-        for (Map.Entry<String, String> e : value.getParameters().entrySet()) {
-            sb.append(';');
-            sb.append(encode(e.getKey())).append('=').append(encode(e.getValue()));
-        }
+    String paramKey = decode(keyValue[0]);
 
-        return sb.toString();
+    String paramValue;
+    if (keyValue.length > 1) {
+      paramValue = decode(keyValue[1]).trim();
+      if (paramValue.startsWith("\"") && paramValue.endsWith("\"")) {
+        paramValue = paramValue.substring(0, paramValue.length() - 1);
+      }
+    } else {
+      paramValue = null;
     }
 
-    private String decode(String s) {
-        try {
-            return URLDecoder.decode(s, "UTF-8");
-        } catch (UnsupportedEncodingException e) {
-            throw new RuntimeException("unexpected error", e);
-        }
-    }
+    parameters.put(paramKey, paramValue);
+  }
 
-    private String encode(String s) {
-        try {
-            return URLEncoder.encode(s, "UTF-8");
-        } catch (UnsupportedEncodingException uee) {
-            throw new RuntimeException("unexpected error", uee);
-        }
-    }
+  @Override
+  public String toString(MediaType value) {
+      StringBuilder sb = new StringBuilder(value.getType()).append('/').append(value.getSubtype());
+
+      for (Map.Entry<String, String> e : value.getParameters().entrySet()) {
+          sb.append(';');
+          sb.append(encode(e.getKey())).append('=').append(encode(e.getValue()));
+      }
+
+      return sb.toString();
+  }
+
+  private String decode(String s) {
+      try {
+          return URLDecoder.decode(s, "UTF-8");
+      } catch (UnsupportedEncodingException e) {
+          throw new RuntimeException("unexpected error", e);
+      }
+  }
+
+  private String encode(String s) {
+      try {
+          return URLEncoder.encode(s, "UTF-8");
+      } catch (UnsupportedEncodingException uee) {
+          throw new RuntimeException("unexpected error", uee);
+      }
+  }
 }

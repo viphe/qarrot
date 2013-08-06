@@ -2,7 +2,6 @@ package viphe.qarrot.chat;
 
 import com.google.inject.Inject;
 import viphe.qarrot.Qarrot;
-import viphe.qarrot.RouteIn;
 import viphe.qarrot.Routes;
 
 import javax.ws.rs.Consumes;
@@ -37,14 +36,13 @@ public class ChatServer {
         return rooms.get(name);
     }
 
-    @RouteIn("chat_room")
-    @Path("room.{name}")
+    @Path("chat_room")
     public ChatRoom room(@PathParam("name") String roomName) {
         Room room = rooms.get(roomName);
         return new ChatRoom(room);
     }
 
-    @RouteIn("chat_command")
+    @Path("chat_command")
     public Room enter(Qarrot qarrot, EnterRoom command) throws IOException {
         Room room = getRoom(command.room);
         room.add(command.pseudo);
